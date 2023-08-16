@@ -67,7 +67,8 @@ def prepare_stock_dataloader(stock_symbol, start_date, end_date, sequence_length
     # Step 6: Remove sliding windows with label -1
     final_sliding_windows = sliding_windows[np.array(final_labels) != -1]
     final_labels = np.array(final_labels)[np.array(final_labels) != -1]
-    print("Final Sliding Windows", final_sliding_windows.shape)
+    # print("Final Sliding Windows", final_sliding_windows.shape)
+    
     # Split sliding windows into two classes based on labels
     class1_windows = final_sliding_windows[final_labels == 1]
     class1_labels = final_labels[final_labels == 1]
