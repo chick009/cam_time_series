@@ -2,7 +2,26 @@
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.cluster import DBSCAN
+from torch.utils.data import Dataset, DataLoader
+from utils import TSDataset
 import numpy as np
+
+def dataloader_conversion(df1_windows, df2_windows):
+
+  train_ratio = 0.7
+
+  data_window = int(df2_windows * train_ratio)
+
+  train_df1 = df1_windows[0: data_window]
+  train_df2 = df2_windows[0: data_window]
+
+  all_class = np.concatenate((train_df1, train_df2), axis=0)
+  label = [1] * len(train_df1) + [0] * len(train_df2)
+
+  dataset = TSDataset(all_class, label)
+  dataloader = DataLoader(dataset, batch_size = 32, shuffle = True)
+
+  return dataloader
 
 def preprocess_data(csv_file, seq_length, ratio, k):
   # Import subset of CSV  
@@ -31,14 +50,22 @@ def preprocess_data(csv_file, seq_length, ratio, k):
   # Convert to sliding windows
   df1_windows = [df1.iloc[i:i+seq_length].values for i in range(len(df1)-seq_length+1)]
   df2_windows = [df2.iloc[i:i+seq_length].values for i in range(len(df2)-seq_length+1)]
-  original_windows = [df_scaled.iloc[i:i+seq_length].values for i in range(len(df2)-seq_length+1)]
+  
 
   df1_windows = np.array(df1_windows)
   df2_windows = np.array(df2_windows)
-  original_windows = np.array(original_windows)
+  dataloader = dataloader_conversion(df1_windows, df2_windows)
 
-  # Return preprocessed arrays
-  return df1_windows, df2_windows, original_windows
+  # -------------------- Testing DataSet --------------------------# 
+  df = pd.read_csv(test_path, index_col=0, nrows=int(ratio*pd.read_csv(csv_file).shape[0]))
+  df_scaled = scaler.fit_transform(df)
+  test_windows = [df_scaled.iloc[i:i+seq_length].values for i in range(len(df2)-seq_length+1)]
+  test_windows = np.array(test_windows)
+  labels = pd.read_csv(test_path, index_col=0, nrows=int(ratio*pd.read_csv(csv_file).shape[0]))
+  
+  
+  # Return preprocessed arrays  
+  return dataloader, test_windows, labels
 
 # Example usage
 df1, df2, df3 = preprocess_data('C:/Users/johnn/cam_time_series_new/inputs/train.csv', 300, 0.3, 0.1)

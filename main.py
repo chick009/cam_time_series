@@ -3,7 +3,7 @@ import numpy as np
 from train import *
 from data_preprocess import anomaly_generation, stock_gen
 from classtrainer import InceptionTime
-from sklearn.metrics import f1_score, recall_score, precision_score
+from metrics.score_calculation import evaluate_metrics
 from sklearn.model_selection import train_test_split
 '''
     # ------------- The logic is like that ----------- #
@@ -70,21 +70,6 @@ def anamoly_detection_one(final_result):
     
     return index
 
-def evaluate_metrics(pred_label, test_label):
-    prediction_tensor = torch.tensor(pred_label)
-    real_tensor = torch.tensor(test_label)
-
-    metrics = dict()
-
-    metrics['F1 Score'] = f1_score(real_tensor, prediction_tensor, average='binary')
-    metrics['recall'] = recall_score(real_tensor, prediction_tensor, average='binary')
-    metrics['precision'] = precision_score(real_tensor, prediction_tensor, average='binary')
-
-    print("The F1 Score is: ", metrics['F1 Score'])
-    print("The Recall Rate is: ", metrics['recall'])
-    print("The Precision Rate is: ", metrics['precision'])
-
-    return metrics
 
 def main(config):
     
@@ -94,30 +79,7 @@ def main(config):
     # Need to split input data into testing and training dataset
     class1, class2, original_window = preprocess_data('C:/Users/johnn/cam_time_series_new/inputs/train.csv', 300, 0.3, 0.1)
     
-    # Split it into training data set 
-
-    reshaped_array = original_window.reshape((-1, 25))
-    train_ratio = 0.7
-    
-    X_train, X_test = train_test_split(reshaped_array, train_size=train_ratio, random_state=42)
-    X_train = X_train.reshape((-1, 300, 25))
-    X_test = X_test.reshape((-1, 300, 25))
-
-    # Split 2
-    reshaped_array = class1.reshape((-1, 25))
-
-    
-    class1_train, class1_test = train_test_split(reshaped_array, train_size=train_ratio, random_state=42)
-    class1_train = class1_train.reshape((-1, 300, 25))
-    class1_test = class1_test.reshape((-1, 300, 25))
-
-    # Split 3:
-    reshaped_array = class2.reshape((-1, 25))
-   
-    
-    class2_train, class2_test = train_test_split(reshaped_array, train_size=train_ratio, random_state=42)
-    class2_train = class2_train.reshape((-1, 300, 25))
-    class2_test = class2_test.reshape((-1, 300, 25))
+  
     
     # Set up dataloader for training data
 
@@ -132,21 +94,23 @@ def main(config):
     train_ds = TensorDataset(data_train, label_train)
     train_loader = DataLoader(train_ds, batch_size= 32)
 
+
+    # --------------------------# 
+
+    dataloader, test_windows, labels = anomaly_generation(...)
     # Train the data with anomaly class and normal class
     model = InceptionTime()
-    model = classifcation.train(model, train_loader)
+    model = classifcation.train(model, dataloader)
 
     # Randomly choose an instance
     last_conv_layer = model._modules['layer3']
     fc_layer = model._modules['fc1']
     
-    dcam = dcam_result(model, data, last_conv_layer, fc_layer)
+    dcam = dcam_result(model, test_windows, last_conv_layer, fc_layer)
     
-
     # Create labels for comparing evaluating metrics
     pred_label = anamoly_detection_one(dcam)
-    test_label = np.array([batch[1] for batch in test_loader])
-    
+    test_label = np.array(labels)
     metrics = evaluate_metrics(pred_label, test_label)
 
     return metrics

@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import MinMaxScaler
+from utils import TSDataset
 import yfinance as yf
 
 def prepare_stock_dataloader(stock_symbol, start_date, end_date, sequence_length=30):
@@ -81,22 +82,8 @@ def prepare_stock_dataloader(stock_symbol, start_date, end_date, sequence_length
     np.save('stock_data_class1_seq10_delay5.npy', class1_windows)
     
 
-    # Define a custom PyTorch dataset
-    class StockDataset(Dataset):
-        def __init__(self, sliding_windows, labels):
-            self.sliding_windows = sliding_windows
-            self.labels = labels
-
-        def __len__(self):
-            return len(self.labels)
-
-        def __getitem__(self, idx):
-            window = self.sliding_windows[idx]
-            label = self.labels[idx]
-            return window, label
-
     # Create an instance of the StockDataset
-    dataset = StockDataset(final_sliding_windows, final_labels)
+    dataset = TSDataset(final_sliding_windows, final_labels)
 
     # Create a PyTorch dataloader
     batch_size = 32
