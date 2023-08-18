@@ -5,9 +5,8 @@ Data Series Classification
 ## Steps 
 1. ./data_preprocess: Preprocess time series and return train_dataloader, test_window, and labels on testing data
 2. ./ts_model & ./train: Initiate Time Series Classification Model and Train using train_dataloader
-3. ./explanation: Using the trained model to generate dCAM on the testing dataset.
-4. ./anomaly_detection: detect the anomaly and generate a predicted dataset
-5. ./metrics: Provide visualisation and metrics calculation
+3. ./explanation & ./detection: Using the trained model to generate dCAM on the testing dataset, and detecting anomaly using STD
+4. ./metrics: Provide visualisation and metrics calculation
 
 
 ## Data
