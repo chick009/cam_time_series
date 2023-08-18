@@ -23,15 +23,19 @@ from sklearn.model_selection import train_test_split
 
 def main(config):
     
-    task_to_solve = config['task']
-    input_path = config['path']
-
-    # Step 1: Preprocess the data and generate necessary data for further computation
-
-    dataloader, test_windows, labels = anomaly_generation.preprocess_data('C:/Users/johnn/cam_time_series_new/inputs/train.csv', 300, 0.3, 0.1)
     
+    # Step 1: Preprocess the data and generate necessary data for further computation
+    file_path = config['input_path'] + config['input_file']
+    seq_len = config['seq_len']
+    noise_pct = config['noise_pct']
+
+    dataloader, test_windows, labels = anomaly_generation.preprocess_data(file_path, seq_len, 0.3, noise_pct)
+
     # Step 2: Initialize a model and train the model.
-    model = InceptionTime()
+
+    _, seq_len, dim = test_windows.shape
+
+    model = InceptionTime(config)
     model = classifcation.train(model, dataloader)
     last_conv_layer = model._modules['layer3']
     fc_layer = model._modules['fc1']
@@ -51,9 +55,25 @@ def main(config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('--path', type=float, default=1e-4)
-    parser.add_argument('--num_epochs', type= int, default = 20)
+    # --------------- Arguments for the Data Preprocessing Process ---------------- # 
+    parser.add_argument('--input_path', type= str, default = 'inputs/')
+    parser.add_argument('--input_file', type = str, default= 'train.csv')
+    parser.add_argument('--train_ratio', type = float, default = 0.7)
+    parser.add_argument('--seq_len', type = float, default = 200)
+    parser.add_argument('--noise_pct', type = float, default = 0.1)
 
+    # --------------- Arguments for training the time series classification model ---------------- # 
+    parser.add_argument('--num_epochs', type= int, default = 200)
+    parser.add_argument('--out_channel', type = int, default = 32)
+    parser.add_argument('--bottleneck_channel', type = int, default = 32)
+    parser.add_argument('--nb_class', default = int, default = 2)
+
+    '''
+        in_channel = args['in_channel']
+        out_channel = args['out_channel']
+        bottleneck_channel = args['bottleneck_channel']
+        nb_class = args['nb_class']
+    '''
     config = parser.parse_args
     args = vars(config)
     

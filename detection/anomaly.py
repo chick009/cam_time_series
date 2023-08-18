@@ -16,9 +16,9 @@ def dcam_result(model, inputs, last_conv_layer, fc_layer, device = 'cpu'):
 
     # Create DCAM Matrix for each instance and append to result array
     for i in range(window):
-        dcam, label = DCAM_m.run(
+        dcam = DCAM_m.create_DCAM(
             instance = inputs[i, :, :],
-            nb_permutation = 200,
+            nb_permutation = 200
         )
         result[i, :, i: i + seq_len] = dcam
 

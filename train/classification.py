@@ -12,13 +12,14 @@ from typing import cast, Union, List
 import time 
 
 def train(model, 
+          dataloader,
           criterion = nn.CrossEntropyLoss(),
           nb_epochs = 300, 
           learning_rate = 0.00001, 
           device = 'cpu'):
 
     
-    optimizer = torch.optim.Adam(model.Parameters(), lr = learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
     
     loss_train_history = []
     accuracy_train_history = []
@@ -30,13 +31,14 @@ def train(model,
         mean_accuracy_train = []
         total_sample_train = []
 
-        for i, batch_data_train in enumerate(dataloader_cl1):
+        for i, batch_data_train in enumerate(dataloader):
             # In each batch of data it contains (B x S x D) and labels
             ts_train, label_train = batch_data_train
 
             # ------------------- Training the data with CE Loss -------------------# 
             optimizer.zero_grad()
-            
+            ts_train = ts_train.permute(0, 2, 1)
+            print(ts_train.shape)
             output_train = model(ts_train.float()).to(device)
             loss_train = criterion(output_train.float(), label_train.long())
             
@@ -54,33 +56,15 @@ def train(model,
 
         time_end = time.time()
 
-        if (epoch % 10 == 0) and verbose:
+        if (epoch % 10 == 0):
             print('Epoch [{}/{}], Loss Train: {:.4f}, Accuracy Train: {:.2f}%'
                     .format(epoch + 1, 
-                                num_epochs,
+                                nb_epochs,
                                     np.mean(mean_loss_train),
                                     (np.sum(mean_accuracy_train)/np.sum(total_sample_train)) * 100))
                                                                 
     loss_train_history.append(np.mean(mean_loss_train))
     accuracy_train_history.append(np.sum(mean_accuracy_train)/np.sum(total_sample_train))
     
-    torch.save(model.state_dict(), './model/model.pth')
+    # torch.save(model.state_dict(), './model/model.pth')
     return model
-
-def test_single(model, instance, label_instance, map_type = 'CAM', device = 'CPU'):
-    # model = torch.load("model").to(device)
-    # model = model.eval()
-
-    # instance = Class2[50]
-    # label_instance = 1
-    # InceptionTime
-    last_conv_layer = model._modules['blocks'][2]
-    fc_layer_name = model._modules['linear']
-
-    if (map_type == 'CAM'):
-        CAM = CAM(model,device,last_conv_layer=last_conv_layer,fc_layer_name=fc_layer_name)
-        cam, _ = CAM.run(instance=instance,label_instance=label_instance)
-        return cam
-    else:
-        CAM = DCAM(model,device,last_conv_layer=last_conv_layer,fc_layer_name=fc_layer_name)
-        cam, _ = DCAM.run(instance=instance,label_instance=label_instance)

@@ -24,7 +24,7 @@ def conv1d_same_padding(in_channels, out_channels, kernel_size):
     return conv
 
 class InceptionBlock(nn.Module):
-    def __init__(self, in_channel, out_channel, bottleneck_channel = 2):
+    def __init__(self, in_channel, out_channel, bottleneck_channel = 32):
         super(InceptionBlock, self).__init__()
         
         kernel_size = [10, 20, 40]
@@ -54,17 +54,22 @@ class InceptionBlock(nn.Module):
         block2 = self.block2(x)
         block3 = self.block3(x)
         block4 = self.block4(x)
-        x = torch.cat([block1, block2, block3, block4], 1)
+        print("Block1 Shape", block1.shape)
+        print("Block2 Shape", block2.shape)
+        print("Block3 Shape", block3.shape)
+        print("Block4 Shape", block4.shape)
+        x = torch.cat([block1, block2, block3, block4], 0)
         return x
 
+# Inception Layer is conducting residual connection for every three inception block
 class InceptionLayer(nn.Module):
-    def __init__(self, in_channel, out_channel):
+    def __init__(self, in_channel, out_channel, bottleneck_channel):
         super(InceptionLayer, self).__init__()
         
         self.layers = nn.Sequential(
-            InceptionBlock(in_channel, out_channel),
-            InceptionBlock(in_channel, out_channel),
-            InceptionBlock(in_channel, out_channel)
+            InceptionBlock(in_channel, out_channel, bottleneck_channel),
+            InceptionBlock(in_channel, out_channel, bottleneck_channel),
+            InceptionBlock(in_channel, out_channel, bottleneck_channel)
         )
 
     def forward(self, x):
@@ -76,22 +81,24 @@ class InceptionTime(nn.Module):
         
         in_channel = args['in_channel']
         out_channel = args['out_channel']
+        bottleneck_channel = args['bottleneck_channel']
+        nb_class = args['nb_class']
+
         self.layers = nn.Sequential(
-            InceptionLayer(in_channel, out_channel), 
-            InceptionLayer(in_channel, out_channel),
-            InceptionLayer(in_channel, out_channel)
+            InceptionLayer(in_channel, out_channel, bottleneck_channel), 
+            InceptionLayer(in_channel, out_channel, bottleneck_channel),
+            InceptionLayer(in_channel, out_channel, bottleneck_channel)
         )
 
-        self.GAP = nn.AdaptiveAvgPool1d(128)
-        self.linear = nn.Linear(128, 2)
-        self.softmax = nn.Softmax()
+        self.GAP = nn.AdaptiveAvgPool1d(out_channel)
+        self.linear = nn.Linear(out_channel, nb_class)
+    
 
     def forward(self, x):
 
         x = self.layers(x)
         x = self.GAP(x)
         x = self.linear(x)
-        x = self.softmax(x)
 
         return x
         
